@@ -14,7 +14,272 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          ride_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          ride_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          ride_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          ride_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          ride_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          ride_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          id: string
+          phone_number: string | null
+          rating_count: number | null
+          total_rating: number | null
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          rating_count?: number | null
+          total_rating?: number | null
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          rating_count?: number | null
+          total_rating?: number | null
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rated_user_id: string
+          rater_id: string
+          rating: number
+          ride_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id: string
+          rater_id: string
+          rating: number
+          ride_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id?: string
+          rater_id?: string
+          rating?: number
+          ride_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          number_of_passengers: number
+          passenger_id: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_location: string | null
+          ride_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          number_of_passengers?: number
+          passenger_id: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location?: string | null
+          ride_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          number_of_passengers?: number
+          passenger_id?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location?: string | null
+          ride_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_requests_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rides: {
+        Row: {
+          available_seats: number
+          car_details: string | null
+          created_at: string
+          departure_date: string
+          departure_time: string
+          destination: string
+          destination_lat: number | null
+          destination_lng: number | null
+          driver_id: string
+          id: string
+          intermediate_lat: number | null
+          intermediate_lng: number | null
+          intermediate_stop: string | null
+          origin: string
+          origin_lat: number | null
+          origin_lng: number | null
+          price_per_seat: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          available_seats: number
+          car_details?: string | null
+          created_at?: string
+          departure_date: string
+          departure_time: string
+          destination: string
+          destination_lat?: number | null
+          destination_lng?: number | null
+          driver_id: string
+          id?: string
+          intermediate_lat?: number | null
+          intermediate_lng?: number | null
+          intermediate_stop?: string | null
+          origin: string
+          origin_lat?: number | null
+          origin_lng?: number | null
+          price_per_seat: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          available_seats?: number
+          car_details?: string | null
+          created_at?: string
+          departure_date?: string
+          departure_time?: string
+          destination?: string
+          destination_lat?: number | null
+          destination_lng?: number | null
+          driver_id?: string
+          id?: string
+          intermediate_lat?: number | null
+          intermediate_lng?: number | null
+          intermediate_stop?: string | null
+          origin?: string
+          origin_lat?: number | null
+          origin_lng?: number | null
+          price_per_seat?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
