@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -191,7 +192,16 @@ const Dashboard = () => {
                   <Plus className="w-4 h-4 mr-2" />
                   Create Ride
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => navigate('/my-rides')}>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => {
+                    toast({
+                      title: 'Coming Soon',
+                      description: 'My Rides feature will be available soon!',
+                    });
+                  }}
+                >
                   <Clock className="w-4 h-4 mr-2" />
                   My Rides
                 </Button>
@@ -229,7 +239,16 @@ const Dashboard = () => {
                   <Search className="w-4 h-4 mr-2" />
                   Find Rides
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => navigate('/my-bookings')}>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => {
+                    toast({
+                      title: 'Coming Soon',
+                      description: 'My Bookings feature will be available soon!',
+                    });
+                  }}
+                >
                   <MapPin className="w-4 h-4 mr-2" />
                   My Bookings
                 </Button>
@@ -265,11 +284,27 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="mt-8 flex flex-wrap gap-4">
-          <Button variant="outline" onClick={() => navigate('/messages')}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              toast({
+                title: 'Coming Soon',
+                description: 'Messages feature will be available soon!',
+              });
+            }}
+          >
             <MessageCircle className="w-4 h-4 mr-2" />
             Messages
           </Button>
-          <Button variant="outline" onClick={() => navigate('/profile')}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              toast({
+                title: 'Coming Soon',
+                description: 'Profile editing will be available soon!',
+              });
+            }}
+          >
             <Users className="w-4 h-4 mr-2" />
             Edit Profile
           </Button>
