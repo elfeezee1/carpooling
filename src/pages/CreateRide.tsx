@@ -15,14 +15,23 @@ const CreateRide = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    origin: string;
+    destination: string;
+    intermediate_stop: string;
+    departure_date: string;
+    departure_time: string;
+    available_seats: number;
+    price_per_seat: string | number;
+    car_details: string;
+  }>({
     origin: '',
     destination: '',
     intermediate_stop: '',
     departure_date: '',
     departure_time: '',
     available_seats: 1,
-    price_per_seat: 0,
+    price_per_seat: '',
     car_details: ''
   });
 
@@ -42,7 +51,7 @@ const CreateRide = () => {
           departure_date: formData.departure_date,
           departure_time: formData.departure_time,
           available_seats: formData.available_seats,
-          price_per_seat: formData.price_per_seat,
+          price_per_seat: typeof formData.price_per_seat === 'string' ? parseFloat(formData.price_per_seat) : formData.price_per_seat,
           car_details: formData.car_details || null
         });
 
@@ -206,7 +215,7 @@ const CreateRide = () => {
                       min="0"
                       step="0.01"
                       value={formData.price_per_seat}
-                      onChange={(e) => handleInputChange('price_per_seat', parseFloat(e.target.value))}
+                      onChange={(e) => handleInputChange('price_per_seat', e.target.value === '' ? '' : parseFloat(e.target.value))}
                       required
                     />
                   </div>
