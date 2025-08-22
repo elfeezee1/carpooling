@@ -199,7 +199,7 @@ const CreateRide = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="price_per_seat">Price per Seat (RM) *</Label>
+                    <Label htmlFor="price_per_seat">Price per Seat (₦) *</Label>
                     <Input
                       id="price_per_seat"
                       type="number"

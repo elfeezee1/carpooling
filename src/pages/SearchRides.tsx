@@ -135,10 +135,50 @@ const SearchRides = () => {
     }
   };
 
+  // Load all available rides on component mount
   useEffect(() => {
-    // Load initial rides without filters
-    handleSearch();
+    loadAllRides();
   }, []);
+
+  const loadAllRides = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .select(`
+          id,
+          driver_id,
+          origin,
+          destination,
+          intermediate_stop,
+          departure_date,
+          departure_time,
+          available_seats,
+          price_per_seat,
+          car_details,
+          status,
+          profiles!rides_driver_id_fkey (
+            username,
+            total_rating,
+            rating_count
+          )
+        `)
+        .eq('status', 'active')
+        .gte('available_seats', 1)
+        .order('departure_date', { ascending: true });
+
+      if (error) throw error;
+      setRides((data as unknown as Ride[]) || []);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
@@ -172,7 +212,7 @@ const SearchRides = () => {
               Search for Rides
             </CardTitle>
             <CardDescription>
-              Find available rides that match your travel plans
+              Find available rides that match your travel plans. Leave fields empty to see all available rides.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -235,9 +275,18 @@ const SearchRides = () => {
 
         {/* Search Results */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Available Rides ({rides.length})
-          </h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-foreground">
+              Available Rides ({rides.length})
+            </h2>
+            <Button 
+              variant="outline" 
+              onClick={loadAllRides}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+          </div>
 
           {rides.length === 0 && !loading && (
             <Card>
@@ -300,7 +349,7 @@ const SearchRides = () => {
                       </div>
                       <div className="flex items-center">
                         <DollarSign className="w-4 h-4 text-primary mr-2" />
-                        <span>RM {ride.price_per_seat}</span>
+                        <span>₦{ride.price_per_seat}</span>
                       </div>
                     </div>
 
