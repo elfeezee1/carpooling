@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import CreateRide from "./pages/CreateRide";
+import SearchRides from "./pages/SearchRides";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/create-ride" 
+              element={
+                <ProtectedRoute>
+                  <CreateRide />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/search-rides" 
+              element={
+                <ProtectedRoute>
+                  <SearchRides />
                 </ProtectedRoute>
               } 
             />
