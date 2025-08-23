@@ -4,9 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { RecentActivity } from '@/components/RecentActivity';
+import { MyRides } from '@/components/MyRides';
+import { MyBookings } from '@/components/MyBookings';
+import { EditProfile } from '@/components/EditProfile';
 import { 
   Car, 
   Users, 
@@ -27,10 +32,16 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    completedRides: 0,
+    connections: 0,
+    pendingRequests: 0
+  });
 
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchStats();
     }
   }, [user]);
 
@@ -52,6 +63,60 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      // Get completed rides count (as driver)
+      const { count: completedAsDriver } = await supabase
+        .from('rides')
+        .select('*', { count: 'exact', head: true })
+        .eq('driver_id', user?.id)
+        .eq('status', 'completed');
+
+      // Get completed rides count (as passenger)
+      const { count: completedAsPassenger } = await supabase
+        .from('ride_requests')
+        .select('rides!inner(*)', { count: 'exact', head: true })
+        .eq('passenger_id', user?.id)
+        .eq('status', 'accepted')
+        .eq('rides.status', 'completed');
+
+      // Get unique connections (people you've shared rides with)
+      const { data: connectionsData } = await supabase
+        .from('ride_requests')
+        .select(`
+          passenger_id,
+          rides!inner(driver_id)
+        `)
+        .or(`passenger_id.eq.${user?.id},rides.driver_id.eq.${user?.id}`)
+        .eq('status', 'accepted');
+
+      const uniqueConnections = new Set();
+      connectionsData?.forEach(item => {
+        if (item.passenger_id !== user?.id) {
+          uniqueConnections.add(item.passenger_id);
+        }
+        if (item.rides.driver_id !== user?.id) {
+          uniqueConnections.add(item.rides.driver_id);
+        }
+      });
+
+      // Get pending requests for user's rides
+      const { count: pendingRequests } = await supabase
+        .from('ride_requests')
+        .select('rides!inner(*)', { count: 'exact', head: true })
+        .eq('rides.driver_id', user?.id)
+        .eq('status', 'pending');
+
+      setStats({
+        completedRides: (completedAsDriver || 0) + (completedAsPassenger || 0),
+        connections: uniqueConnections.size,
+        pendingRequests: pendingRequests || 0
+      });
+    } catch (error: any) {
+      console.error('Error fetching stats:', error);
     }
   };
 
@@ -149,7 +214,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Completed Rides</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats.completedRides}</p>
                 </div>
                 <Car className="w-8 h-8 text-primary" />
               </div>
@@ -161,10 +226,17 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Connections</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats.connections}</p>
                 </div>
                 <Users className="w-8 h-8 text-primary" />
               </div>
+              {stats.pendingRequests > 0 && (
+                <div className="mt-2">
+                  <Badge variant="outline" className="text-xs">
+                    {stats.pendingRequests} pending requests
+                  </Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -192,19 +264,20 @@ const Dashboard = () => {
                   <Plus className="w-4 h-4 mr-2" />
                   Create Ride
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => {
-                    toast({
-                      title: 'Coming Soon',
-                      description: 'My Rides feature will be available soon!',
-                    });
-                  }}
-                >
-                  <Clock className="w-4 h-4 mr-2" />
-                  My Rides
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <Clock className="w-4 h-4 mr-2" />
+                      My Rides
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>My Rides</DialogTitle>
+                    </DialogHeader>
+                    <MyRides />
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="p-4 bg-secondary rounded-lg">
                 <h4 className="font-medium mb-2">Benefits:</h4>
@@ -239,19 +312,20 @@ const Dashboard = () => {
                   <Search className="w-4 h-4 mr-2" />
                   Find Rides
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => {
-                    toast({
-                      title: 'Coming Soon',
-                      description: 'My Bookings feature will be available soon!',
-                    });
-                  }}
-                >
-                  <MapPin className="w-4 h-4 mr-2" />
-                  My Bookings
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      My Bookings
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>My Bookings</DialogTitle>
+                    </DialogHeader>
+                    <MyBookings />
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="p-4 bg-secondary rounded-lg">
                 <h4 className="font-medium mb-2">Benefits:</h4>
@@ -268,18 +342,7 @@ const Dashboard = () => {
 
         {/* Recent Activity Section */}
         <div className="mt-12">
-          <h3 className="text-xl font-semibold text-foreground mb-6">Recent Activity</h3>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No recent activity</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Start by creating a ride or searching for available rides
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <RecentActivity />
         </div>
 
         {/* Quick Actions */}
@@ -296,18 +359,7 @@ const Dashboard = () => {
             <MessageCircle className="w-4 h-4 mr-2" />
             Messages
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              toast({
-                title: 'Coming Soon',
-                description: 'Profile editing will be available soon!',
-              });
-            }}
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
+          <EditProfile />
         </div>
       </div>
     </div>
