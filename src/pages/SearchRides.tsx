@@ -70,7 +70,7 @@ const SearchRides = () => {
           price_per_seat,
           car_details,
           status,
-          profiles!driver_id (
+          profiles:profiles!rides_driver_id_fkey (
             username,
             total_rating,
             rating_count
@@ -157,7 +157,7 @@ const SearchRides = () => {
           price_per_seat,
           car_details,
           status,
-          profiles!driver_id (
+          profiles:profiles!rides_driver_id_fkey (
             username,
             total_rating,
             rating_count
