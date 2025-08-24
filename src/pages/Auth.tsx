@@ -59,11 +59,42 @@ const Auth = () => {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
+    const username = formData.get('username') as string;
     const password = formData.get('password') as string;
 
+    // First, get the email associated with this username from profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('username', username)
+      .single();
+
+    if (profileError || !profile) {
+      toast({
+        title: 'Error',
+        description: 'Username not found',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Get the user's email from auth.users using RPC or direct query
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.user_id);
+    
+    if (authError || !authUser.user) {
+      toast({
+        title: 'Error',
+        description: 'Account not found',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Sign in with email and password
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: authUser.user.email!,
       password,
     });
 
@@ -108,12 +139,12 @@ const Auth = () => {
               <TabsContent value="signin" className="space-y-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-username">Username</Label>
                     <Input
-                      id="signin-email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email"
+                      id="signin-username"
+                      name="username"
+                      type="text"
+                      placeholder="Enter your username"
                       required
                     />
                   </div>
