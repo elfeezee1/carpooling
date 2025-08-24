@@ -33,7 +33,7 @@ interface Ride {
   price_per_seat: number;
   car_details?: string;
   status: string;
-  profiles: {
+  driver_profile: {
     username: string;
     total_rating?: number;
     rating_count?: number;
@@ -70,7 +70,7 @@ const SearchRides = () => {
           price_per_seat,
           car_details,
           status,
-          profiles:profiles!rides_driver_id_fkey (
+          driver_profile:profiles!driver_id (
             username,
             total_rating,
             rating_count
@@ -157,7 +157,7 @@ const SearchRides = () => {
           price_per_seat,
           car_details,
           status,
-          profiles:profiles!rides_driver_id_fkey (
+          driver_profile:profiles!driver_id (
             username,
             total_rating,
             rating_count
@@ -367,16 +367,16 @@ const SearchRides = () => {
                   <div className="border-l pl-6">
                     <div className="text-center mb-4">
                       <h4 className="font-medium text-foreground mb-2">Driver</h4>
-                      <p className="text-sm text-muted-foreground mb-2">{ride.profiles?.username || 'Unknown Driver'}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{ride.driver_profile?.username || 'Unknown Driver'}</p>
                       
-                      {ride.profiles?.total_rating ? (
+                      {ride.driver_profile?.total_rating ? (
                         <div className="flex items-center justify-center">
                           <Star className="w-4 h-4 text-yellow-500 mr-1" />
                           <span className="text-sm font-medium">
-                            {ride.profiles.total_rating.toFixed(1)}
+                            {ride.driver_profile.total_rating.toFixed(1)}
                           </span>
                           <span className="text-xs text-muted-foreground ml-1">
-                            ({ride.profiles.rating_count} reviews)
+                            ({ride.driver_profile.rating_count} reviews)
                           </span>
                         </div>
                       ) : (
