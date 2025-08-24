@@ -62,53 +62,33 @@ const Auth = () => {
     const username = formData.get('username') as string;
     const password = formData.get('password') as string;
 
-    // First, get the email associated with this username from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('username', username)
-      .single();
+    try {
+      // Call the database function to get email by username
+      const { data: email, error: emailError } = await supabase
+        .rpc('get_user_email_by_username', { username_input: username });
 
-    if (profileError || !profile) {
-      toast({
-        title: 'Error',
-        description: 'Username not found',
-        variant: 'destructive',
+      if (emailError || !email) {
+        throw new Error('Username not found');
+      }
+
+      // Sign in with the retrieved email and password
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password,
       });
-      setLoading(false);
-      return;
-    }
 
-    // Get the user's email from auth.users using RPC or direct query
-    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.user_id);
-    
-    if (authError || !authUser.user) {
-      toast({
-        title: 'Error',
-        description: 'Account not found',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
-    }
+      if (error) throw error;
 
-    // Sign in with email and password
-    const { error } = await supabase.auth.signInWithPassword({
-      email: authUser.user.email!,
-      password,
-    });
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
       navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Invalid username or password',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
