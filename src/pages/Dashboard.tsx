@@ -42,6 +42,39 @@ const Dashboard = () => {
     if (user) {
       fetchProfile();
       fetchStats();
+      
+      // Set up real-time subscriptions for rides and ride_requests
+      const ridesChannel = supabase
+        .channel('rides-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'rides'
+          },
+          (payload) => {
+            console.log('Rides table change:', payload);
+            fetchStats(); // Refresh stats when rides change
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'ride_requests'
+          },
+          (payload) => {
+            console.log('Ride requests table change:', payload);
+            fetchStats(); // Refresh stats when ride requests change
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ridesChannel);
+      };
     }
   }, [user]);
 
@@ -68,12 +101,16 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
+      console.log('Fetching stats for user:', user?.id);
+      
       // Get completed rides count (as driver)
       const { count: completedAsDriver } = await supabase
         .from('rides')
         .select('*', { count: 'exact', head: true })
         .eq('driver_id', user?.id)
         .eq('status', 'completed');
+
+      console.log('Completed rides as driver:', completedAsDriver);
 
       // Get completed rides count (as passenger)
       const { count: completedAsPassenger } = await supabase
@@ -82,6 +119,8 @@ const Dashboard = () => {
         .eq('passenger_id', user?.id)
         .eq('status', 'accepted')
         .eq('rides.status', 'completed');
+
+      console.log('Completed rides as passenger:', completedAsPassenger);
 
       // Get unique connections (people you've shared rides with)
       const { data: connectionsData } = await supabase
@@ -93,6 +132,8 @@ const Dashboard = () => {
         .or(`passenger_id.eq.${user?.id},rides.driver_id.eq.${user?.id}`)
         .eq('status', 'accepted');
 
+      console.log('Connections data:', connectionsData);
+
       const uniqueConnections = new Set();
       connectionsData?.forEach(item => {
         if (item.passenger_id !== user?.id) {
@@ -103,6 +144,8 @@ const Dashboard = () => {
         }
       });
 
+      console.log('Unique connections:', uniqueConnections.size);
+
       // Get pending requests for user's rides
       const { count: pendingRequests } = await supabase
         .from('ride_requests')
@@ -110,11 +153,14 @@ const Dashboard = () => {
         .eq('rides.driver_id', user?.id)
         .eq('status', 'pending');
 
-      setStats({
+      const newStats = {
         completedRides: (completedAsDriver || 0) + (completedAsPassenger || 0),
         connections: uniqueConnections.size,
         pendingRequests: pendingRequests || 0
-      });
+      };
+
+      console.log('New stats:', newStats);
+      setStats(newStats);
     } catch (error: any) {
       console.error('Error fetching stats:', error);
     }

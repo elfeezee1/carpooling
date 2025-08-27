@@ -83,12 +83,19 @@ export const MyRides = () => {
 
   const updateRideStatus = async (rideId: string, status: string) => {
     try {
+      console.log('Updating ride status:', { rideId, status, userId: user?.id });
+      
       const { error } = await supabase
         .from('rides')
         .update({ status })
         .eq('id', rideId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating ride status:', error);
+        throw error;
+      }
+
+      console.log('Ride status updated successfully');
 
       toast({
         title: 'Success',
@@ -97,6 +104,7 @@ export const MyRides = () => {
 
       fetchMyRides();
     } catch (error: any) {
+      console.error('Failed to update ride status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update ride status',
