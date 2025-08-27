@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Car, MapPin, Calendar, Clock, Users, DollarSign } from 'lucide-react';
+import DriverAvailabilityList from '@/components/DriverAvailabilityList';
 
 const CreateRide = () => {
   const { user } = useAuth();
@@ -260,6 +261,11 @@ const CreateRide = () => {
             </form>
           </CardContent>
         </Card>
+        
+        {/* Driver Availability List */}
+        <div className="mt-8">
+          <DriverAvailabilityList />
+        </div>
       </div>
     </div>
   );
