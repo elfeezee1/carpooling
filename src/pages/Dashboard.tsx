@@ -233,6 +233,17 @@ const Dashboard = () => {
         </div>
 
         {/* User Stats */}
+        <div className="mb-4 flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Your Stats</h3>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchStats}
+            disabled={loading}
+          >
+            Refresh Stats
+          </Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="pt-6">
