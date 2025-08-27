@@ -89,10 +89,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability_status: string
           avatar_url: string | null
           bio: string | null
           created_at: string
           id: string
+          last_seen: string | null
           phone_number: string | null
           rating_count: number | null
           total_rating: number | null
@@ -101,10 +103,12 @@ export type Database = {
           username: string
         }
         Insert: {
+          availability_status?: string
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           id?: string
+          last_seen?: string | null
           phone_number?: string | null
           rating_count?: number | null
           total_rating?: number | null
@@ -113,10 +117,12 @@ export type Database = {
           username: string
         }
         Update: {
+          availability_status?: string
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           id?: string
+          last_seen?: string | null
           phone_number?: string | null
           rating_count?: number | null
           total_rating?: number | null
