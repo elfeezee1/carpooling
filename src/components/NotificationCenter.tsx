@@ -117,7 +117,8 @@ const NotificationCenter = () => {
 
   const fetchPendingRideRequests = async () => {
     try {
-      const { data, error } = await supabase
+      // First get the ride requests for rides the user is driving
+      const { data: requests, error: requestsError } = await supabase
         .from('ride_requests')
         .select(`
           *,
@@ -128,20 +129,41 @@ const NotificationCenter = () => {
             departure_time,
             price_per_seat,
             driver_id
-          ),
-          passenger_profile:profiles!ride_requests_passenger_id_fkey (
-            username,
-            total_rating,
-            rating_count
           )
         `)
         .eq('status', 'pending')
         .eq('rides.driver_id', user?.id);
 
-      if (error) throw error;
-      setRideRequests(data as unknown as RideRequest[] || []);
+      if (requestsError) throw requestsError;
+
+      if (!requests || requests.length === 0) {
+        setRideRequests([]);
+        return;
+      }
+
+      // Get passenger profiles separately
+      const passengerIds = requests.map(req => req.passenger_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, username, total_rating, rating_count')
+        .in('user_id', passengerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const requestsWithProfiles = requests.map(request => ({
+        ...request,
+        passenger_profile: profiles?.find(p => p.user_id === request.passenger_id) || null
+      }));
+
+      setRideRequests(requestsWithProfiles as RideRequest[]);
     } catch (error: any) {
       console.error('Error fetching ride requests:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load ride requests',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -191,12 +213,12 @@ const NotificationCenter = () => {
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="w-4 h-4" />
-          {unreadCount > 0 && (
+          {(unreadCount > 0 || rideRequests.length > 0) && (
             <Badge 
               variant="destructive" 
               className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs"
             >
-              {unreadCount}
+              {unreadCount + rideRequests.length}
             </Badge>
           )}
         </Button>
