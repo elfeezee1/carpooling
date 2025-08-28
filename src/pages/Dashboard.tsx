@@ -195,40 +195,46 @@ const Dashboard = () => {
   const fetchAvailableRides = async () => {
     setRidesLoading(true);
     try {
-      const { data, error } = await supabase
+      // First, fetch rides without profiles
+      const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
-        .select(`
-          id,
-          driver_id,
-          origin,
-          destination,
-          intermediate_stop,
-          departure_date,
-          departure_time,
-          available_seats,
-          price_per_seat,
-          car_details,
-          status,
-          profiles!driver_id (
-            username,
-            total_rating,
-            rating_count
-          )
-        `)
+        .select('*')
         .eq('status', 'active')
         .gte('available_seats', 1)
         .neq('driver_id', user?.id) // Don't show user's own rides
         .order('departure_date', { ascending: true });
 
-      if (error) throw error;
-      
-      // Transform the data to match our interface
-      const transformedRides = (data || []).map(ride => ({
+      if (ridesError) throw ridesError;
+
+      if (!ridesData || ridesData.length === 0) {
+        setAvailableRides([]);
+        return;
+      }
+
+      // Get unique driver IDs
+      const driverIds = [...new Set(ridesData.map(ride => ride.driver_id))];
+
+      // Fetch driver profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, username, total_rating, rating_count')
+        .in('user_id', driverIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map for quick profile lookup
+      const profilesMap = new Map();
+      profilesData?.forEach(profile => {
+        profilesMap.set(profile.user_id, profile);
+      });
+
+      // Combine rides with driver profiles
+      const ridesWithProfiles = ridesData.map(ride => ({
         ...ride,
-        driver_profile: ride.profiles
+        driver_profile: profilesMap.get(ride.driver_id) || null
       }));
-      
-      setAvailableRides(transformedRides as unknown as Ride[]);
+
+      setAvailableRides(ridesWithProfiles as Ride[]);
     } catch (error: any) {
       console.error('Error fetching available rides:', error);
       toast({
