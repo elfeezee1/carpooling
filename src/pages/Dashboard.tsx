@@ -23,8 +23,29 @@ import {
   MessageCircle,
   Star,
   Bell,
-  LogOut
+  LogOut,
+  Calendar,
+  DollarSign
 } from 'lucide-react';
+
+interface Ride {
+  id: string;
+  driver_id: string;
+  origin: string;
+  destination: string;
+  intermediate_stop?: string;
+  departure_date: string;
+  departure_time: string;
+  available_seats: number;
+  price_per_seat: number;
+  car_details?: string;
+  status: string;
+  driver_profile: {
+    username: string;
+    total_rating?: number;
+    rating_count?: number;
+  } | null;
+}
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -37,11 +58,14 @@ const Dashboard = () => {
     connections: 0,
     pendingRequests: 0
   });
+  const [availableRides, setAvailableRides] = useState<Ride[]>([]);
+  const [ridesLoading, setRidesLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchStats();
+      fetchAvailableRides();
       
       // Set up real-time subscriptions for rides and ride_requests
       const ridesChannel = supabase
@@ -53,10 +77,11 @@ const Dashboard = () => {
             schema: 'public',
             table: 'rides'
           },
-          (payload) => {
-            console.log('Rides table change:', payload);
-            fetchStats(); // Refresh stats when rides change
-          }
+           (payload) => {
+             console.log('Rides table change:', payload);
+             fetchStats(); // Refresh stats when rides change
+             fetchAvailableRides(); // Refresh available rides
+           }
         )
         .on(
           'postgres_changes',
@@ -65,10 +90,11 @@ const Dashboard = () => {
             schema: 'public',
             table: 'ride_requests'
           },
-          (payload) => {
-            console.log('Ride requests table change:', payload);
-            fetchStats(); // Refresh stats when ride requests change
-          }
+           (payload) => {
+             console.log('Ride requests table change:', payload);
+             fetchStats(); // Refresh stats when ride requests change
+             fetchAvailableRides(); // Refresh available rides
+           }
         )
         .subscribe();
 
@@ -163,6 +189,86 @@ const Dashboard = () => {
       setStats(newStats);
     } catch (error: any) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchAvailableRides = async () => {
+    setRidesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .select(`
+          id,
+          driver_id,
+          origin,
+          destination,
+          intermediate_stop,
+          departure_date,
+          departure_time,
+          available_seats,
+          price_per_seat,
+          car_details,
+          status,
+          profiles!driver_id (
+            username,
+            total_rating,
+            rating_count
+          )
+        `)
+        .eq('status', 'active')
+        .gte('available_seats', 1)
+        .neq('driver_id', user?.id) // Don't show user's own rides
+        .order('departure_date', { ascending: true });
+
+      if (error) throw error;
+      
+      // Transform the data to match our interface
+      const transformedRides = (data || []).map(ride => ({
+        ...ride,
+        driver_profile: ride.profiles
+      }));
+      
+      setAvailableRides(transformedRides as unknown as Ride[]);
+    } catch (error: any) {
+      console.error('Error fetching available rides:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load available rides',
+        variant: 'destructive',
+      });
+    } finally {
+      setRidesLoading(false);
+    }
+  };
+
+  const handleRequestRide = async (rideId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('ride_requests')
+        .insert({
+          ride_id: rideId,
+          passenger_id: user.id,
+          number_of_passengers: 1,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Ride request sent successfully!',
+      });
+
+      // Refresh available rides
+      fetchAvailableRides();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -363,11 +469,16 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <Button 
                   className="w-full"
-                  onClick={() => navigate('/search-rides')}
+                  onClick={fetchAvailableRides}
+                  disabled={ridesLoading}
                   style={{ background: 'var(--gradient-primary)' }}
                 >
-                  <Search className="w-4 h-4 mr-2" />
-                  Find Rides
+                  {ridesLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  ) : (
+                    <Search className="w-4 h-4 mr-2" />
+                  )}
+                  Refresh Rides
                 </Button>
                 <Dialog>
                   <DialogTrigger asChild>
@@ -395,6 +506,130 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Available Rides Section */}
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-foreground">
+              Available Rides ({availableRides.length})
+            </h3>
+            <Button 
+              variant="outline" 
+              onClick={fetchAvailableRides}
+              disabled={ridesLoading}
+            >
+              {ridesLoading ? (
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <Search className="w-4 h-4 mr-2" />
+              )}
+              Refresh
+            </Button>
+          </div>
+
+          {availableRides.length === 0 && !ridesLoading && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Car className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No available rides at the moment</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Check back later or create your own ride
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {availableRides.map((ride) => (
+              <Card key={ride.id} className="hover:shadow-lg transition-all duration-300">
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    {/* Route Information */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center text-foreground">
+                          <MapPin className="w-4 h-4 text-primary mr-1" />
+                          <span className="font-medium text-sm">{ride.origin}</span>
+                        </div>
+                        <span className="text-muted-foreground">→</span>
+                        <div className="flex items-center text-foreground">
+                          <MapPin className="w-4 h-4 text-primary mr-1" />
+                          <span className="font-medium text-sm">{ride.destination}</span>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                        Active
+                      </Badge>
+                    </div>
+
+                    {ride.intermediate_stop && (
+                      <div className="text-xs text-muted-foreground">
+                        <MapPin className="w-3 h-3 inline mr-1" />
+                        Stop: {ride.intermediate_stop}
+                      </div>
+                    )}
+
+                    {/* Trip Details */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 text-primary mr-2" />
+                        <span>{new Date(ride.departure_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 text-primary mr-2" />
+                        <span>{ride.departure_time}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 text-primary mr-2" />
+                        <span>{ride.available_seats} seats</span>
+                      </div>
+                      <div className="flex items-center">
+                        <DollarSign className="w-4 h-4 text-primary mr-2" />
+                        <span>₦{ride.price_per_seat}</span>
+                      </div>
+                    </div>
+
+                    {ride.car_details && (
+                      <div className="p-3 bg-secondary rounded-lg">
+                        <div className="flex items-center text-sm">
+                          <Car className="w-4 h-4 text-primary mr-2" />
+                          <span>{ride.car_details}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Driver Info */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div>
+                        <p className="text-sm font-medium">{ride.driver_profile?.username || 'Unknown Driver'}</p>
+                        {ride.driver_profile?.total_rating ? (
+                          <div className="flex items-center text-xs">
+                            <Star className="w-3 h-3 text-yellow-500 mr-1" />
+                            <span>{ride.driver_profile.total_rating.toFixed(1)}</span>
+                            <span className="text-muted-foreground ml-1">
+                              ({ride.driver_profile.rating_count} reviews)
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No ratings yet</span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleRequestRide(ride.id)}
+                        style={{ background: 'var(--gradient-primary)' }}
+                      >
+                        Book Ride
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
         {/* Recent Activity Section */}

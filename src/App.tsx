@@ -59,11 +59,7 @@ const App = () => (
             />
             <Route 
               path="/search-rides" 
-              element={
-                <ProtectedRoute>
-                  <SearchRides />
-                </ProtectedRoute>
-              } 
+              element={<Navigate to="/dashboard" replace />}
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
