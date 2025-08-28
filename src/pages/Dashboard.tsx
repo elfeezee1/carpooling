@@ -12,6 +12,7 @@ import { RecentActivity } from '@/components/RecentActivity';
 import { MyRides } from '@/components/MyRides';
 import { MyBookings } from '@/components/MyBookings';
 import { EditProfile } from '@/components/EditProfile';
+import NotificationCenter from '@/components/NotificationCenter';
 import { 
   Car, 
   Users, 
@@ -309,9 +310,7 @@ const Dashboard = () => {
               <h1 className="text-xl font-bold text-foreground">CarPool+</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <Bell className="w-4 h-4" />
-              </Button>
+              <NotificationCenter />
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4" />
               </Button>

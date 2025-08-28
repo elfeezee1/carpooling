@@ -58,6 +58,28 @@ export const MyBookings = () => {
   useEffect(() => {
     if (user) {
       fetchMyBookings();
+      
+      // Set up real-time subscription for ride request updates
+      const rideRequestsChannel = supabase
+        .channel('ride-requests-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'ride_requests',
+            filter: `passenger_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Ride request update:', payload);
+            fetchMyBookings(); // Refresh bookings when any change occurs
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(rideRequestsChannel);
+      };
     }
   }, [user]);
 
@@ -197,7 +219,11 @@ export const MyBookings = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Badge variant={getStatusColor(booking.status)}>
+                      <Badge variant={getStatusColor(booking.status)} className="capitalize">
+                        {booking.status === 'pending' && '⏳ '}
+                        {booking.status === 'accepted' && '✅ '}
+                        {booking.status === 'rejected' && '❌ '}
+                        {booking.status === 'cancelled' && '🚫 '}
                         {booking.status}
                       </Badge>
                       <Badge variant={getStatusColor(booking.rides?.status || 'unknown')} className="bg-muted">
