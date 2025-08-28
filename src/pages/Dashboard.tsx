@@ -13,7 +13,6 @@ import { MyRides } from '@/components/MyRides';
 import { MyBookings } from '@/components/MyBookings';
 import { EditProfile } from '@/components/EditProfile';
 import NotificationCenter from '@/components/NotificationCenter';
-import TestBookingFlow from '@/components/TestBookingFlow';
 import { 
   Car, 
   Users, 
@@ -513,9 +512,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Test Booking Flow */}
-        <TestBookingFlow />
 
         {/* Available Rides Section */}
         <div className="mt-12">
